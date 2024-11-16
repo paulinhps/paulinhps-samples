@@ -1,0 +1,52 @@
+﻿@page "/auth"
+@using Paulinhps.Samples.Blazor.Security.Providers
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<h3>User Claims</h3>
+
+@if (claims == null)
+{
+    <p>Loading claims...</p>
+}
+else if (claims.Count == 0)
+{
+    <p>No claims available for this user.</p>
+}
+else
+{
+    <ul>
+        @foreach (var claim in claims)
+        {
+            <li><strong>@claim.Type:</strong> @claim.Value</li>
+        }
+    </ul>
+}
+
+@code {
+    private List<System.Security.Claims.Claim> claims = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+       var tokenjwt = user.Claims.FirstOrDefault(c => c.Type == "jwt")?.Value;
+
+        if (user.Identity is { IsAuthenticated: true })
+        {
+            claims = user.Claims.ToList();
+        }
+        else
+        {
+            claims = new List<System.Security.Claims.Claim>();
+        }
+
+        if (AuthenticationStateProvider is JwtAuthenticationStateProvider jwtProvider)
+        {
+            var jwtToken = jwtProvider.GetJwtToken();
+
+            if(!string.IsNullOrWhiteSpace(jwtToken))
+                claims.Add(new("JwtToken", jwtToken! ));
+        }
+    }
+}
